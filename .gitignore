@@ -1,0 +1,22 @@
+# data and results never go into git
+data/*
+!data/README.md
+outputs/
+*.csv
+*.xlsx
+*.dcm
+*.Dcm
+*.dicom
+*.joblib
+*.pkl
+*.pt
+*.pth
+
+# environment and editor files
+.env
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+.vscode/
+.idea/

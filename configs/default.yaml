@@ -1,0 +1,153 @@
+# Settings for the paper run (Choi et al., European Urology Open Science 2026).
+# Every setting lives here; the code only reads it. Paths are relative to the repository root.
+
+run_name: paper
+seed: 42
+
+paths:
+  regions: data/regions.csv       # one row per tumour region (format: data/README.md)
+  image_root: data/images         # image_path in regions.csv is relative to this folder
+  out_dir: outputs                # results are written to outputs/<run_name>/
+
+labels:
+  positive: HG                    # high grade = 1, low grade = 0
+
+# Step "split": patient-level 8:2 split of Centre 1 into training and internal validation.
+# Centre 2 is always the external validation cohort. Skipped if regions.csv already has a cohort column.
+split:
+  test_size: 0.2
+  stratify_on: [grade, age_group, sex]   # paper: "stratified split based on age, sex, and tumour grade"
+  age_bin_years: 10
+  random_state: 1717
+
+# Step "extract": image preprocessing (paper Section 2.3, Supplementary Figure 1).
+preprocess:
+  channels: [gray, r, g, b]
+  clahe_clip_limit: 3.0
+  clahe_tile_grid: [100, 100]
+  uint8_cast: wrap                # original code cast (z * 255) to uint8 and let values wrap; "clip" saturates instead
+
+# PyRadiomics settings, passed to RadiomicsFeatureExtractor as they are.
+radiomics:
+  settings:
+    binWidth: 10
+    resampledPixelSpacing: [0, 0]
+    interpolator: sitkGaussian
+    force2D: true
+    force2Ddimension: 0
+    sigma: [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0]   # LoG sigma (mm = pixels here)
+  image_types: [Original, LBP2D, Wavelet, LoG]
+  feature_classes: [firstorder, glcm, glszm, glrlm, ngtdm, gldm]
+  shape2d_on_gray: true           # 9 shape features from the original greyscale image only
+  n_jobs: 4
+
+# Step "select": Coe-Thr-Lasso (variance filter -> Welch's t-test -> Lasso coefficient threshold).
+selection:
+  use: published                  # "published" = the 19 features of the paper; "computed" = run Coe-Thr-Lasso here
+  p_value: 0.05
+  coef_lasso: {cv: 10, random_state: 1717, max_iter: 10000}
+  threshold_step: 0.001
+  threshold_lasso: {cv: 10, random_state: 61321}
+  holdout_fraction: 0.5           # the training set is split once to score each threshold (MSE)
+  holdout_random_state: 1530
+  holdout_by_patient: false       # original code: region-level split (groups were passed but ignored)
+  balance_age: true               # original code: swap regions until mean age differs by < 1 year
+  published_features:
+    - gray_log-sigma-1-5-mm-3D_glcm_Idmn
+    - gray_log-sigma-4-0-mm-3D_glcm_Imc1
+    - gray_wavelet-H_ngtdm_Strength
+    - r_original_firstorder_Mean
+    - r_wavelet-L_firstorder_Skewness
+    - r_log-sigma-4-0-mm-3D_glcm_Imc1
+    - r_log-sigma-4-0-mm-3D_glcm_Imc2
+    - r_log-sigma-5-0-mm-3D_glcm_Imc2
+    - r_original_gldm_DependenceVariance
+    - g_original_ngtdm_Strength
+    - g_wavelet-L_firstorder_10Percentile
+    - g_log-sigma-0-5-mm-3D_ngtdm_Contrast
+    - g_log-sigma-1-0-mm-3D_glcm_MCC
+    - g_log-sigma-1-5-mm-3D_firstorder_Median
+    - g_log-sigma-2-0-mm-3D_glszm_GrayLevelVariance
+    - b_original_firstorder_Energy
+    - b_original_firstorder_Mean
+    - b_wavelet-H_ngtdm_Contrast
+    - b_log-sigma-5-0-mm-3D_glszm_LargeAreaLowGrayLevelEmphasis
+
+# Step "train": five classifiers, patient-grouped stratified 5-fold CV + Optuna on the training cohort only.
+train:
+  models: [lr, svm, rf, xgb, lgbm]
+  tune: true                      # false = use published_params below (Supplementary Section S2)
+  cv_folds: 5
+  cv_random_state: 71
+  sampler_seed: 42
+  n_trials: {lr: 200, svm: 200, rf: 2000, xgb: 2000, lgbm: 2000}
+  early_stopping_rounds: {xgb: 30, lgbm: 20}   # used inside CV only (validation fold)
+  n_jobs: 4
+
+# Search ranges from the original code. [low, high] = uniform, [low, high, log] = log scale,
+# {choices: [...]} = categorical. Integer bounds give integer parameters.
+search_space:
+  lr:
+    C: [1.0e-5, 1.0e+5, log]
+    solver: {choices: [liblinear, saga]}
+  svm:
+    C: [1.0e-5, 1.0e+5, log]
+    gamma: [1.0e-5, 10.0, log]
+  rf:
+    n_estimators: [10, 2000]
+    max_depth: [1, 30]
+    min_samples_split: [2, 20]
+    min_samples_leaf: [1, 20]
+    max_features: [0.2, 1.0]
+  xgb:
+    learning_rate: [0.01, 0.5]
+    n_estimators: [10, 2000]
+    max_depth: [1, 30]
+    min_child_weight: [1.0, 30.0]
+    gamma: [0.0, 0.9]
+    subsample: [0.2, 1.0]
+    colsample_bytree: [0.5, 1.0]
+    reg_lambda: [0.001, 1.0]
+    reg_alpha: [0.001, 1.0]
+    max_delta_step: [0.0, 10.0]
+  lgbm:
+    num_leaves: {choices: [255, 511, 1023]}
+    max_depth: [5, 25]
+    learning_rate: [0.2, 0.4]
+    n_estimators: [300, 2500]
+    min_child_samples: [10, 15]
+    reg_lambda: [5.0, 15.0]
+    colsample_bytree: {choices: [0.5, 0.7]}
+
+# Final hyperparameters reported in Supplementary Section S2 (class weights are recomputed from the data).
+# The supplement repeats the LightGBM settings under XGBoost, so XGBoost has no published values.
+published_params:
+  lr: {C: 1.327, solver: liblinear, penalty: l2, max_iter: 1000}
+  svm: {C: 2584.591, gamma: 0.000167, kernel: rbf}
+  rf: {n_estimators: 755, max_depth: 28, min_samples_split: 15, min_samples_leaf: 1, max_features: 0.212}
+  xgb: null
+  lgbm: {learning_rate: 0.383, max_depth: 14, min_child_samples: 12, n_estimators: 1349, num_leaves: 1023,
+         colsample_bytree: 0.5, reg_lambda: 14.074}
+
+# Step "evaluate" (paper Section 2.5).
+evaluate:
+  cohorts: [internal, external]
+  n_bootstrap: 2000               # patient-level cluster bootstrap
+  bootstrap_seed: 42
+  calibration_cohort: external
+  calibration_models: [svm, lr]
+  calibration_intercept: joint    # paper: a in logit(P) = a + b*logit(p); "offset" = calibration-in-the-large
+  calibration_ci: wald            # paper: model-based (Wald) CI; "bootstrap" = patient-level cluster bootstrap
+  lowess_frac: 0.6667
+  dca_thresholds: [0.01, 0.99, 0.01]
+
+# Step "explain" (paper Section 3.4, Figure 2, Supplementary Figure 1).
+explain:
+  model: svm
+  cohort: internal
+  background_size: 100            # rows of the explained cohort used as the KernelExplainer background
+  max_explain: null               # null = explain every region of the cohort
+  nsamples: auto
+  map_feature: g_wavelet-L_firstorder_10Percentile
+  map_percentile: 10
+  map_examples: 4                 # regions drawn for the GWL10 map (highest and lowest predicted HG)

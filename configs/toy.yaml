@@ -1,0 +1,33 @@
+# Small, fast settings for the synthetic data made by scripts/make_toy_data.py.
+# Everything not listed here comes from default.yaml.
+inherit: default.yaml
+run_name: toy
+
+paths:
+  regions: data/toy/regions.csv
+  image_root: data/toy/images
+
+radiomics:
+  settings:
+    sigma: [1.0, 2.0]
+
+selection:
+  use: computed
+
+train:
+  n_trials: {lr: 5, svm: 5, rf: 3, xgb: 3, lgbm: 3}
+  n_jobs: 2
+
+search_space:
+  rf: {n_estimators: [10, 100]}
+  xgb: {n_estimators: [10, 100], min_child_weight: [1.0, 5.0]}
+  lgbm: {n_estimators: [20, 100], num_leaves: {choices: [7, 15]}, min_child_samples: [5, 10]}
+
+evaluate:
+  n_bootstrap: 200
+
+explain:
+  background_size: 20
+  max_explain: 40
+  nsamples: 100
+  map_examples: 2
