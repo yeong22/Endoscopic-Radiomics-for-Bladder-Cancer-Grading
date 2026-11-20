@@ -1,0 +1,54 @@
+cff-version: 1.2.0
+message: "If you use this code in academic research, please cite the associated publication below."
+title: "Endoscopic Radiomics for Bladder Cancer Grading"
+abstract: >-
+  Interpretable multichannel radiomics analysis of white-light cystoscopy images for bladder cancer
+  grade prediction: channel-wise preprocessing, PyRadiomics feature extraction from grey, red, green
+  and blue channels, Coe-Thr-Lasso feature selection, five machine-learning classifiers,
+  patient-level evaluation (bootstrap CIs, calibration, decision curves) and SHAP explanations.
+type: software
+authors:
+  - family-names: Choi
+    given-names: Yewon
+    affiliation: "Yonsei University"
+repository-code: "https://github.com/yeong22/Endoscopic-Radiomics-for-Bladder-Cancer-Grading"
+url: "https://doi.org/10.1016/j.euros.2026.03.018"
+license: Apache-2.0
+keywords:
+  - endoscopic radiomics
+  - endoscopy image analysis
+  - cystoscopy
+  - white-light cystoscopy
+  - bladder cancer
+  - urothelial carcinoma
+  - tumour grade prediction
+  - radiomics
+  - image feature quantification
+  - texture analysis
+  - PyRadiomics
+  - explainable AI
+  - SHAP
+  - medical image analysis
+preferred-citation:
+  type: article
+  title: "A Novel Radiomics-based Interpretable Model for Bladder Cancer Grade Prediction Using White-Light Cystoscopy Images"
+  authors:
+    - family-names: Choi
+      given-names: Yewon
+    - family-names: Cho
+      given-names: Sang Wouk
+    - family-names: Hong
+      given-names: Junho
+    - family-names: Lee
+      given-names: Jongsoo
+    - family-names: Kim
+      given-names: Hwiyoung
+    - family-names: Lee
+      given-names: Kwang Suk
+  journal: "European Urology Open Science"
+  volume: 87
+  start: 71
+  end: 79
+  year: 2026
+  doi: "10.1016/j.euros.2026.03.018"
+  url: "https://www.sciencedirect.com/science/article/pii/S2666168326000674"

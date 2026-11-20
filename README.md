@@ -1,21 +1,53 @@
-[European Urology Open Science 2026] A Novel Radiomics-based Interpretable Model for Bladder Cancer Grade Prediction Using White-Light Cystoscopy Images
-=========================
+# Endoscopic Radiomics for Bladder Cancer Grading
 
-📄 [Paper](https://doi.org/10.1016/j.euros.2026.03.018) &nbsp; 📑 Supplementary material: on the article page
+Interpretable multichannel radiomics analysis of white-light cystoscopy images for bladder cancer grade prediction.
 
-Grading a bladder tumour before resection still relies on how it looks under white-light cystoscopy (WLC), which varies between urologists. We outline tumour regions on WLC frames, extract radiomic features from the grey, red, green and blue channels, keep **19** features with Coe-Thr-Lasso, and compare five classifiers for low-grade vs high-grade. Trained on 2,624 regions from 311 patients at one centre, the support vector machine reached an AUROC of **0.87** on internal validation (584 regions, 75 patients) and **0.79** on external validation at a second centre (358 regions, 37 patients). SHAP ranks the green-channel wavelet-L 10th percentile (GWL10) first; lower values push predictions towards high grade.
+[![Paper](https://img.shields.io/badge/Paper-European_Urology_Open_Science_2026-005A9C)](https://doi.org/10.1016/j.euros.2026.03.018)
+[![DOI](https://img.shields.io/badge/DOI-10.1016%2Fj.euros.2026.03.018-blue)](https://doi.org/10.1016/j.euros.2026.03.018)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-green.svg)](LICENSE)
+[![Python 3.9](https://img.shields.io/badge/Python-3.9-3776AB.svg)](requirements.txt)
+
+**A reproducible way to quantify what the endoscopist sees.** This code turns an endoscopic frame and a tumour outline into 4,473 radiomic features (colour, intensity distribution and multi-scale texture, measured separately in the grey, red, green and blue channels) and shows which features, and which pixels, drive each prediction. On white-light cystoscopy, 19 of these features separate low-grade from high-grade bladder cancer with an AUROC of **0.87** on internal validation and **0.79** on external validation at a second hospital. To the authors' knowledge, the study is the first to apply conventional radiomics to endoscopic images.
+
+**Keywords:** endoscopic radiomics · endoscopy image analysis · quantitative endoscopy · endoscopic image feature quantification · cystoscopy · white-light cystoscopy (WLC) · cystoscopic image · bladder cancer · bladder tumour (tumor) · urothelial carcinoma · tumour grade prediction · low-grade vs high-grade · TURBT · radiomic features · colour (color) texture analysis · PyRadiomics · wavelet · local binary pattern (LBP) · Laplacian of Gaussian (LoG) · CLAHE · LASSO feature selection · support vector machine (SVM) · explainable AI (XAI) · SHAP · interpretable machine learning · medical image analysis · computer-aided diagnosis (CAD) · urology
+
+## Associated Publication
+
+Choi Y, et al. A Novel Radiomics-based Interpretable Model for Bladder Cancer Grade Prediction Using White-Light Cystoscopy Images. *European Urology Open Science*. 2026;87:71–79.
+
+https://doi.org/10.1016/j.euros.2026.03.018 · [ScienceDirect (open access)](https://www.sciencedirect.com/science/article/pii/S2666168326000674)
+
+Conference abstract: Choi Y, et al. A Visually Interpretable Radiomics Model for Bladder Cancer Grading Using White-Light Cystoscopy Images. EAU Congress 2026, *European Urology*. https://doi.org/10.1016/s0302-2838(26)01511-3
+
+## Reproducibility Note
+
+This repository provides research companion code for the published study.
+
+Some analysis procedures differ from the original analysis code used for the manuscript. See ["Differences from the original analysis code"](#differences-from-the-original-analysis-code) before attempting reproduction.
 
 <p align="center">
   <img src="imgs/fig1_overview.jpg" width="85%"><br>
   <em>Figure 1 of the paper (CC BY 4.0). (A) Patient selection at two centres. (B) Segmentation, preprocessing, 4-channel feature extraction, Coe-Thr-Lasso, five classifiers, evaluation and SHAP.</em>
 </p>
 
+## What This Code Does
+
+- **Quantifies endoscopic image features.** Each region is split into grey, red, green and blue channels, normalised, standardised and contrast-enhanced (CLAHE), then described by PyRadiomics features (first-order statistics, GLCM, GLSZM, GLRLM, NGTDM, GLDM) on the original, wavelet, local binary pattern and Laplacian-of-Gaussian images: 4,473 numbers per region.
+- **Selects a compact feature set.** Coe-Thr-Lasso (variance filter → Welch's t-test → Lasso coefficient threshold) keeps the features that predict grade.
+- **Builds and compares five classifiers.** Logistic regression, SVM, random forest, XGBoost and LightGBM, tuned with Optuna on patient-grouped cross-validation.
+- **Evaluates them the way clinical papers need.** AUROC and AUPRC with patient-level bootstrap CIs, DeLong tests, calibration curves and decision curve analysis.
+- **Explains them.** SHAP values per feature, and pixel maps that show where in the tumour a feature value comes from (GWL10 map).
+
+The code takes any 2D colour endoscopic frame (DICOM, PNG or JPG) with a region outline. It has been validated for bladder cancer grade on white-light cystoscopy only.
+
 ## Quick Start
 
-Create an environment (`llvm-openmp` provides the OpenMP runtime that XGBoost and LightGBM need on macOS):
+Get the code and create an environment (`llvm-openmp` provides the OpenMP runtime that XGBoost and LightGBM need on macOS):
 ```bash
-conda create -n bca-wlc -c conda-forge python=3.9 llvm-openmp -y
-conda activate bca-wlc
+git clone https://github.com/yeong22/Endoscopic-Radiomics-for-Bladder-Cancer-Grading.git
+cd Endoscopic-Radiomics-for-Bladder-Cancer-Grading
+conda create -n endo-radiomics -c conda-forge python=3.9 llvm-openmp -y
+conda activate endo-radiomics
 pip install -r requirements.txt
 ```
 
@@ -77,7 +109,7 @@ Calibration and decision curve of the SVM on the external cohort (Figure 3): cal
   <em>Figure 3 of the paper (CC BY 4.0). (A) LOESS calibration curve with bootstrap band. (B) Decision curve.</em>
 </p>
 
-SHAP values of the SVM (Figure 2):
+SHAP values of the SVM (Figure 2). The green-channel wavelet-L 10th percentile (GWL10) ranks first; lower values push predictions towards high grade.
 
 <p align="center">
   <img src="imgs/fig2_shap.jpg" width="85%"><br>
@@ -95,7 +127,7 @@ Supplementary Table 1 (internal validation): Coe-Thr-Lasso against other selecti
 | RF importance | 12 | 0.82 | 0.84 | 0.80 | 0.84 | 0.81 | 0.84 |
 | **Coe-Thr-Lasso** | **19** | **0.86** | **0.89** | **0.81** | **0.85** | **0.87** | **0.89** |
 
-## Reproducibility Notes
+## Reproducibility Details
 
 - The evaluation code (cluster bootstrap, calibration, decision curves, DeLong) and the GWL10 map were **re-implemented from the paper's Methods**; the original analysis code of the final revision is not available. Run on the saved predictions of the published SVM, the evaluation code returns AUROC 0.87 / 0.79, AUPRC 0.89 / 0.90 (internal / external), calibration intercept 0.43 (0.10–0.75) and slope 0.93 (0.67–1.18).
 - The calibration intercept and slope come from the logistic recalibration model logit(P) = a + b·logit(p) with Wald CIs, which reproduces the reported values. `evaluate.calibration_ci: bootstrap` gives patient-level bootstrap CIs instead.
@@ -114,7 +146,7 @@ This repository follows the paper's Methods. Where the original notebooks differ
 
 ## Repository Structure
 ```
-bca-wlc-radiomics/
+Endoscopic-Radiomics-for-Bladder-Cancer-Grading/
 ├── main.py                   # one entry point: --step split|extract|select|train|evaluate|explain|all
 ├── configs/
 │   ├── default.yaml          # paper settings (every parameter lives here)
@@ -131,10 +163,15 @@ bca-wlc-radiomics/
 ├── scripts/make_toy_data.py  # synthetic data in the real layout
 ├── stats/table1.R            # Table 1 (patient characteristics)
 ├── data/README.md            # input format
-└── imgs/                     # figures from the paper
+├── imgs/                     # figures from the paper
+├── CITATION.cff              # citation metadata ("Cite this repository" on GitHub)
+└── LICENSE                   # Apache-2.0
 ```
 
 ## Citation
+
+If you use this repository in academic research, please cite the associated publication.
+
 ```bibtex
 @article{choi2026radiomics,
   title   = {A Novel Radiomics-based Interpretable Model for Bladder Cancer Grade Prediction Using White-Light Cystoscopy Images},
@@ -146,9 +183,18 @@ bca-wlc-radiomics/
   doi     = {10.1016/j.euros.2026.03.018}
 }
 ```
+The "Cite this repository" button on GitHub gives the same reference in APA and BibTeX.
 
-## Contact
-Yewon Choi (first author). Please open a GitHub issue for questions about the code.
+## Author
+
+**Yewon Choi** · [Homepage](https://yeong22.github.io) · [Google Scholar](https://scholar.google.com/citations?hl=en&user=DFJ7HgkAAAAJ) · [GitHub](https://github.com/yeong22)
+
+More medical AI work by the author:
+- Liver Cancer Risk Stratification Using Deep Learning on Nationwide Longitudinal Health Screening Data: A Retrospective Cohort Study. *BMC Medical Informatics and Decision Making*, 2026. https://doi.org/10.1186/s12911-025-03323-x
+- Everything About Medical Imaging AI, Part I: From Development Environment Setup to Machine-Learning Model Development (Korean e-book, with Sang Wouk Cho). https://wikidocs.net/book/10449
+
+Questions about the code: please open a GitHub issue.
 
 ## License
-Figures in `imgs/` are taken from the paper, published under CC BY 4.0 (© 2026 The Authors).
+
+The code is released under the [Apache License 2.0](LICENSE). The figures in `imgs/` are taken from the paper, published under CC BY 4.0 (© 2026 The Authors).
