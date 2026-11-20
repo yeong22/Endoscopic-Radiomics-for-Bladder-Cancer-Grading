@@ -101,7 +101,16 @@ Supplementary Table 1 (internal validation): Coe-Thr-Lasso against other selecti
 - The calibration intercept and slope come from the logistic recalibration model logit(P) = a + b·logit(p) with Wald CIs, which reproduces the reported values. `evaluate.calibration_ci: bootstrap` gives patient-level bootstrap CIs instead.
 - PyRadiomics: the paper used 3.0.1, which has no Python 3.9 wheels; this repository pins 3.1.0.
 - Preprocessing keeps the original cast of the standardised image to 8 bits, where values outside 0–255 wrap around (`preprocess.uint8_cast: wrap`); `clip` saturates instead.
-- Re-running the code on the original data will not give exactly the published numbers (library versions, random seeds, model refitting).
+- Re-running the code on the original data will not give exactly the published numbers (library versions, random seeds and the differences below).
+
+### Differences from the original analysis code
+
+This repository follows the paper's Methods. Where the original notebooks differ, the main points are:
+
+- **Model selection.** In the original code, each cross-validation fold model was scored on the internal validation cohort, and the checkpoint with the highest internal AUROC became the final model. Here, hyperparameters are chosen by cross-validation inside the training cohort and the final model is refit on the whole training cohort, so the validation cohorts are not used before evaluation. The published internal validation results may therefore be optimistic.
+- **Validation cohorts.** In the original code, the internal (654 → 584 regions) and external validation regions were filtered with an inclusion flag before evaluation; the criteria for this flag are not described in the paper. The final external prediction file has 356 regions (358 in the paper).
+- **Split and cross-validation.** The original split was stratified by tumour grade only (paper: age, sex and grade), and cross-validation was not stratified (LightGBM: region level). Both follow the paper here.
+- **Confidence intervals.** The CIs in the abstract and Results text come from a region-level bootstrap; Table 2 uses the patient-level cluster bootstrap implemented here. The calibration CIs in the paper are Wald intervals.
 
 ## Repository Structure
 ```
