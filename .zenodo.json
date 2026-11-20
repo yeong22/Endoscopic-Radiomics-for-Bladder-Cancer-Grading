@@ -1,0 +1,34 @@
+{
+  "title": "Endoscopic Radiomics for Bladder Cancer Grading",
+  "description": "<p>Code for: Choi Y, et al. A Novel Radiomics-based Interpretable Model for Bladder Cancer Grade Prediction Using White-Light Cystoscopy Images. European Urology Open Science. 2026;87:71-79. https://doi.org/10.1016/j.euros.2026.03.018</p><p>Interpretable multichannel radiomics analysis of white-light cystoscopy images: preprocessing, PyRadiomics feature extraction from grey, red, green and blue channels (4,473 features per tumour region), Coe-Thr-Lasso feature selection, five machine-learning classifiers, patient-level evaluation (cluster bootstrap CIs, DeLong tests, calibration, decision curves) and SHAP explanations. Please cite the article if you use this code.</p>",
+  "upload_type": "software",
+  "access_right": "open",
+  "license": "apache-2.0",
+  "creators": [
+    {"name": "Choi, Yewon", "affiliation": "Yonsei University"}
+  ],
+  "keywords": [
+    "endoscopic radiomics",
+    "endoscopy image analysis",
+    "cystoscopy",
+    "white-light cystoscopy",
+    "bladder cancer",
+    "urothelial carcinoma",
+    "tumour grade prediction",
+    "radiomics",
+    "image feature quantification",
+    "texture analysis",
+    "PyRadiomics",
+    "explainable AI",
+    "SHAP",
+    "medical image analysis"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "10.1016/j.euros.2026.03.018",
+      "relation": "isSupplementTo",
+      "scheme": "doi",
+      "resource_type": "publication-article"
+    }
+  ]
+}
