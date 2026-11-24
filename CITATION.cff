@@ -11,6 +11,11 @@ authors:
   - family-names: Choi
     given-names: Yewon
     affiliation: "Yonsei University"
+doi: 10.5281/zenodo.24502401
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.24502401
+    description: "Zenodo archive of the code, all versions"
 repository-code: "https://github.com/yeong22/Endoscopic-Radiomics-for-Bladder-Cancer-Grading"
 url: "https://doi.org/10.1016/j.euros.2026.03.018"
 license: Apache-2.0
