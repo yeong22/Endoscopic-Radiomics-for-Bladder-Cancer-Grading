@@ -4,8 +4,8 @@ pandas==2.0.3
 scipy==1.10.1
 scikit-learn==1.3.2
 statsmodels==0.14.1
-# The paper reports PyRadiomics 3.0.1, which has no wheels for Python 3.9. 3.1.0 has wheels except for
-# Apple Silicon, where its PyPI source package fails to build, so it is installed from the release tag there.
+# The paper used PyRadiomics 3.0.1, which has no wheel for Python 3.9, so 3.1.0 is used here.
+# On Apple Silicon it is built from the release tag.
 pyradiomics==3.1.0; platform_machine != "arm64"
 pyradiomics @ git+https://github.com/AIM-Harvard/pyradiomics.git@v3.1.0; platform_machine == "arm64"
 SimpleITK==2.3.1

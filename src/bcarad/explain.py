@@ -1,18 +1,15 @@
 """Model interpretation (paper Section 3.4, Figure 2, Supplementary Figure 1).
 
-- SHAP values of the SVM from a KernelExplainer on predict_proba with a logit link (as in the original
-  code); beeswarm and mean |SHAP| bar plots.
-- GWL10 map, re-implemented from the paper's Methods: green channel -> normalise -> standardise -> CLAHE
-  -> PyRadiomics crop/resample -> wavelet-L image; pixels at or below the 10th percentile inside the
-  tumour contour are drawn as red dots. The model only uses the single 10th-percentile value; the map is
-  an illustration of where that value comes from.
+- SHAP values of the SVM (KernelExplainer on predict_proba, logit link), beeswarm and bar plots.
+- GWL10 map: green channel, normalisation, standardisation, CLAHE and wavelet-L filtering. Pixels at or
+  below the 10th percentile inside the tumour contour are drawn as red dots.
 """
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import shap
 import SimpleITK as sitk
-from radiomics import imageoperations
+from radiomics import featureextractor, imageoperations
 
 from .data import load_rgb, polygon_to_mask
 from .preprocess import normalize_standardize_clahe
@@ -38,23 +35,22 @@ def plot_shap(values, X, out_dir):
         plt.close()
 
 
-def _roi(image, mask, settings):
-    """The cropped (and Gaussian-resampled) image/mask that PyRadiomics extracts features from."""
+def wavelet_l(image, mask, settings):
+    """Wavelet-L image, tumour mask and crop origin, on the same crop as the feature extraction."""
+    settings = featureextractor.RadiomicsFeatureExtractor(**settings).settings  # with the PyRadiomics defaults
     img, msk = imageoperations.resampleImage(sitk.GetImageFromArray(image), sitk.GetImageFromArray(mask), **settings)
+    wavelet = {name: im for im, name, _ in imageoperations.getWaveletImage(img, msk, **settings)}
     x0, y0 = (round(v) for v in img.GetOrigin())
-    return img, msk, (x0, y0)
+    return sitk.GetArrayFromImage(wavelet["wavelet-L"]), sitk.GetArrayFromImage(msk).astype(bool), (x0, y0)
 
 
 def gwl10_map(row, cfg, path, title=""):
-    x, settings = cfg["explain"], cfg["radiomics"]["settings"]
+    x = cfg["explain"]
     rgb = load_rgb(cfg["paths"]["image_root"] / row["image_path"])
     mask = polygon_to_mask(row["polygon"], rgb.shape[:2])
     steps = normalize_standardize_clahe(rgb[..., 1], cfg["preprocess"], return_steps=True)
 
-    img, msk, (x0, y0) = _roi(steps["clahe"], mask, settings)
-    wavelet = {name: im for im, name, _ in imageoperations.getWaveletImage(img, msk, **settings)}
-    wl = sitk.GetArrayFromImage(wavelet["wavelet-L"])
-    roi = sitk.GetArrayFromImage(msk).astype(bool)
+    wl, roi, (x0, y0) = wavelet_l(steps["clahe"], mask, cfg["radiomics"]["settings"])
     p10 = np.percentile(wl[roi], x["map_percentile"])
     low = roi & (wl <= p10)
     h, w = wl.shape

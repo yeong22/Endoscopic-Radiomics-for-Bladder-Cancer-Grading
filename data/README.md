@@ -1,7 +1,7 @@
 # Input data
 
-Nothing in `data/` except this file is tracked by git. Put your own data here, or point `paths.regions`
-and `paths.image_root` in the config somewhere else.
+Put `regions.csv` and the images here, or set `paths.regions` and `paths.image_root` in the config.
+Files in this folder are ignored by git.
 
 ```
 data/
@@ -27,9 +27,4 @@ One row per tumour region. A frame can hold several regions, and a patient sever
 | `sex` | `M` | `M` or `F` |
 | `cohort` | `train` | Optional: `train`, `internal` or `external`. If present, `--step split` keeps it |
 
-`python scripts/make_toy_data.py` writes a synthetic example in exactly this format to `data/toy/`.
-
-## Before sharing anything
-
-Do not commit images, DICOM files, tables or model files. DICOM headers and file names can carry
-patient names and numbers, and fitted SVM models store training rows as support vectors.
+`python scripts/make_toy_data.py` writes a synthetic example in this format to `data/toy/`.

@@ -1,10 +1,9 @@
-"""Make a small SYNTHETIC dataset with the same layout as the real one (no patient data).
+"""Make a small synthetic dataset in the format described in data/README.md.
 
-    python scripts/make_toy_data.py            # -> data/toy/regions.csv + data/toy/images/*.png
+    python scripts/make_toy_data.py            # data/toy/regions.csv and data/toy/images/*.png
 
-Images are random pink "bladder wall" textures with elliptical "tumours". High-grade tumours are
-more often darker and coarser in the green channel, so the pipeline has a weak signal to learn.
-All numbers (patients, ages, prevalence) are arbitrary and unrelated to the study cohort.
+Images are random textures with elliptical regions. High-grade regions are more often darker and
+coarser in the green channel, so the classifiers have a weak signal to learn.
 """
 import argparse
 from pathlib import Path
@@ -35,7 +34,7 @@ def draw_image(rng, size, tumours):
     for poly, high_grade in tumours:
         mask = np.zeros((size, size), np.uint8)
         cv2.fillPoly(mask, [np.round(poly).astype(np.int32)], 1)
-        coarse_texture = rng.random() < (0.7 if high_grade else 0.35)  # grade only shifts the odds
+        coarse_texture = rng.random() < (0.7 if high_grade else 0.35)
         shift = rng.normal(-14 if high_grade else -10, 8)
         texture = 13 * smooth_noise(rng, size, 3.0 if coarse_texture else 1.0)
         fine = smooth_noise(rng, size, 1.0)

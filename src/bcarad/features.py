@@ -58,7 +58,7 @@ def extract_region(job):
         if cfg["radiomics"]["shape2d_on_gray"]:
             row.update(_values(_EXTRACTORS["shape"].execute(sitk.GetImageFromArray(images["gray"]), mask), "gray"))
         return row
-    except Exception as e:  # keep going like the original code, but report every failure
+    except Exception as e:  # failed regions are listed in extraction_errors.txt
         return f"{region_id}: {type(e).__name__}: {e}"
 
 

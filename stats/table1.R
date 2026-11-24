@@ -1,7 +1,7 @@
-# Table 1: patient characteristics by cohort (base R, no packages).
+# Table 1: patient characteristics by cohort.
 # Usage: Rscript stats/table1.R outputs/paper/regions_split.csv
-# Age is taken per patient (maximum over the patient's regions, as in the original script) and
-# summarised as median (IQR), as in the paper. Grade is counted at the tumour-region level.
+# Age is taken per patient (maximum over the patient's regions) and summarised as median (IQR).
+# Grade is counted per tumour region.
 
 args <- commandArgs(trailingOnly = TRUE)
 path <- if (length(args) > 0) args[1] else "outputs/paper/regions_split.csv"

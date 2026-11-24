@@ -1,14 +1,10 @@
 """Discrimination, calibration and clinical utility (paper Section 2.5, Table 2, Figure 3, Supplementary Figure 2).
 
-Re-implemented from the paper's Methods: the analysis code of the final revision is not available.
-- AUROC and AUPRC at the tumour-region level; 95% CIs from a patient-level cluster bootstrap
-  (resample patients with replacement, keep all regions of each sampled patient; 2000 resamples).
-- DeLong test for paired AUROC differences between models.
-- Calibration: LOWESS-smoothed calibration curve; intercept and slope of the logistic recalibration
-  model logit(P(HG)) = a + b * logit(p) with Wald 95% CIs, which reproduces the values reported in the
-  paper (0.43 [0.10-0.75] and 0.93 [0.67-1.18] on the surviving external predictions). Options:
-  calibration-in-the-large intercept and patient-level bootstrap CIs. Brier score with bootstrap CI.
-- Decision curve analysis: net benefit = TP/n - FP/n * t / (1 - t) against treat-all and treat-none.
+- AUROC and AUPRC per tumour region, 95% CI from a patient-level cluster bootstrap (patients are
+  resampled with replacement and all regions of a sampled patient are kept).
+- DeLong test for AUROC differences between models.
+- Calibration: LOWESS curve, intercept and slope of logit(P(HG)) = a + b * logit(p), Brier score.
+- Decision curve analysis: net benefit = TP/n - FP/n * t / (1 - t), with treat-all and treat-none.
 """
 import warnings
 
@@ -50,11 +46,11 @@ def ci(values):
 def calibration_fit(y, p, intercept="joint"):
     """Logistic recalibration logit(P(y=1)) = a + b * logit(p).
 
-    Returns (estimates, Wald 95% CIs) for (intercept, slope). intercept="joint" gives a from that model
-    (the values reported in the paper); "offset" gives calibration-in-the-large (b fixed at 1).
+    Returns (estimates, Wald 95% CIs) for (intercept, slope). intercept="joint" takes a from this model,
+    "offset" fixes b at 1 (calibration-in-the-large).
     """
     lp = np.log(np.clip(p, EPS, 1 - EPS) / (1 - np.clip(p, EPS, 1 - EPS)))
-    with warnings.catch_warnings():  # perfect separation can occur in small bootstrap samples
+    with warnings.catch_warnings():  # perfect separation in small bootstrap samples
         warnings.simplefilter("ignore")
         joint = sm.GLM(y, sm.add_constant(lp), family=sm.families.Binomial()).fit()
         fit_a = joint if intercept == "joint" else \
@@ -74,13 +70,13 @@ def net_benefit(y, p, thresholds):
 
 
 def delong(y, p1, p2):
-    """Two-sided DeLong test for two correlated AUROCs (Sun & Xu 2014 fast algorithm). Returns z, p."""
+    """Two-sided DeLong test for two correlated AUROCs (DeLong et al., 1988). Returns z, p."""
     pos, neg = y == 1, y == 0
     m, n = pos.sum(), neg.sum()
 
     def components(p):
         psi = (p[pos][:, None] > p[neg][None, :]) + 0.5 * (p[pos][:, None] == p[neg][None, :])
-        return psi.mean(axis=1), psi.mean(axis=0)  # structural components V10 (positives), V01 (negatives)
+        return psi.mean(axis=1), psi.mean(axis=0)  # V10 (positives), V01 (negatives)
 
     a10, a01 = components(p1)
     b10, b01 = components(p2)

@@ -32,7 +32,7 @@ def load_rgb(path):
 
 
 def polygon_to_mask(polygon, shape):
-    """'x1,y1;x2,y2;...' (CVAT polygon, pixel coordinates) -> binary mask of the given (rows, cols) shape."""
+    """Binary mask of shape (rows, cols) from a polygon string 'x1,y1;x2,y2;...' in pixel coordinates."""
     pts = [tuple(map(float, p.split(","))) for p in polygon.split(";")]
     rr, cc = draw.polygon([p[1] for p in pts], [p[0] for p in pts], shape)
     mask = np.zeros(shape, dtype=np.uint8)
@@ -59,7 +59,7 @@ def split_cohorts(df, cfg):
     label = strata[0].str.cat(strata[1:], sep="_") if len(strata) > 1 else strata[0]
     n_splits = round(1 / s["test_size"])
     sgkf = StratifiedGroupKFold(n_splits=n_splits, shuffle=True, random_state=s["random_state"])
-    with warnings.catch_warnings():  # rare strata (fewer members than folds) only trigger a warning
+    with warnings.catch_warnings():  # strata with fewer members than folds
         warnings.simplefilter("ignore", UserWarning)
         _, test_idx = next(sgkf.split(c1, label, groups=c1["patient_id"]))
     df.loc[c1.index[test_idx], "cohort"] = "internal"

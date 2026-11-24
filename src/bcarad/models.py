@@ -19,7 +19,7 @@ def class_weights(y):
 
 
 def model_config(name, params, y_train, cfg, early_stopping=False):
-    """Constructor arguments of a model: tuned/published params + fixed settings of the original code."""
+    """Constructor arguments of a model: tuned or published parameters plus the fixed settings."""
     w = class_weights(y_train)
     seed, n_jobs = cfg["seed"], cfg["train"]["n_jobs"]
     fixed = {

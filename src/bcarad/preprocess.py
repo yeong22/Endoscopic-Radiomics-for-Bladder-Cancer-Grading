@@ -4,10 +4,8 @@ import numpy as np
 
 
 def to_uint8(x, mode):
-    """Cast float pixels to uint8 like the original code.
-
-    The original code did (z * 255).astype(np.uint8). Out-of-range values wrap modulo 256 there
-    (checked on x86-64 and arm64); "wrap" reproduces that explicitly, "clip" saturates to 0..255.
+    """Cast float pixels to uint8. "wrap" takes values modulo 256, as (z * 255).astype(np.uint8) does;
+    "clip" limits them to 0..255.
     """
     if mode == "wrap":
         return np.mod(np.trunc(x).astype(np.int64), 256).astype(np.uint8)

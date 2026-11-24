@@ -6,7 +6,6 @@
 4. split the training set once; for each threshold t, fit LassoCV on part A with the features
    whose |coefficient| > t and score mean squared error on part B
 5. keep the features above the threshold with the lowest error
-Only training regions are used; the validation cohorts never enter this step.
 """
 import warnings
 
@@ -22,7 +21,7 @@ from sklearn.preprocessing import StandardScaler
 
 
 def _balance_age(age, a, b, max_iter=1000):
-    """Original code: swap single regions between the two parts until their mean age differs by < 1 year."""
+    """Swap single regions between the two parts until their mean age differs by < 1 year."""
     a, b = list(a), list(b)
     for _ in range(max_iter):
         mean_a, mean_b = age[a].mean(), age[b].mean()
@@ -43,7 +42,6 @@ def _holdout_split(train, s):
         n_splits = round(1 / s["holdout_fraction"])
         sgkf = StratifiedGroupKFold(n_splits=n_splits, shuffle=True, random_state=s["holdout_random_state"])
         return next(sgkf.split(train, train["y"], groups=train["patient_id"]))
-    # region-level split as in the original code (StratifiedShuffleSplit ignores the groups it was given)
     sss = StratifiedShuffleSplit(n_splits=1, test_size=s["holdout_fraction"], random_state=s["holdout_random_state"])
     a, b = next(sss.split(train, train["y"]))
     return _balance_age(train["age"].to_numpy(dtype=float), a, b) if s["balance_age"] else (a, b)
@@ -59,7 +57,7 @@ def coe_thr_lasso(train, feature_cols, cfg):
     steps["non-zero variance"] = len(keep)
 
     hg, lg = X.loc[train["y"] == 1, keep], X.loc[train["y"] == 0, keep]
-    with warnings.catch_warnings():  # near-constant features trigger precision warnings
+    with warnings.catch_warnings():  # precision warnings from near-constant features
         warnings.simplefilter("ignore")
         p = ttest_ind(hg, lg, equal_var=False, nan_policy="omit").pvalue
     sig = list(keep[np.asarray(p) < s["p_value"]])
@@ -87,7 +85,7 @@ def coe_thr_lasso(train, feature_cols, cfg):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             model = LassoCV(cv=t["cv"], random_state=t["random_state"])
-            model.fit(a[cols], a["y"])  # unscaled features, as in the original code
+            model.fit(a[cols], a["y"])  # features are not scaled in this step
         mse = mean_squared_error(b["y"], model.predict(b[cols]))
         curve.append((thr, len(cols), mse))
     curve = pd.DataFrame(curve, columns=["threshold", "n_features", "mse"])

@@ -1,5 +1,5 @@
-# Settings for the paper run (Choi et al., European Urology Open Science 2026).
-# Every setting lives here; the code only reads it. Paths are relative to the repository root.
+# Settings of the paper (Choi et al., European Urology Open Science 2026).
+# Paths are relative to the repository root.
 
 run_name: paper
 seed: 42
@@ -16,7 +16,7 @@ labels:
 # Centre 2 is always the external validation cohort. Skipped if regions.csv already has a cohort column.
 split:
   test_size: 0.2
-  stratify_on: [grade, age_group, sex]   # paper: "stratified split based on age, sex, and tumour grade"
+  stratify_on: [grade, age_group, sex]
   age_bin_years: 10
   random_state: 1717
 
@@ -25,7 +25,7 @@ preprocess:
   channels: [gray, r, g, b]
   clahe_clip_limit: 3.0
   clahe_tile_grid: [100, 100]
-  uint8_cast: wrap                # original code cast (z * 255) to uint8 and let values wrap; "clip" saturates instead
+  uint8_cast: wrap                # "wrap" = modulo 256, "clip" = limit to 0..255
 
 # PyRadiomics settings, passed to RadiomicsFeatureExtractor as they are.
 radiomics:
@@ -35,7 +35,7 @@ radiomics:
     interpolator: sitkGaussian
     force2D: true
     force2Ddimension: 0
-    sigma: [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0]   # LoG sigma (mm = pixels here)
+    sigma: [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0]   # LoG sigma in pixels
   image_types: [Original, LBP2D, Wavelet, LoG]
   feature_classes: [firstorder, glcm, glszm, glrlm, ngtdm, gldm]
   shape2d_on_gray: true           # 9 shape features from the original greyscale image only
@@ -50,8 +50,8 @@ selection:
   threshold_lasso: {cv: 10, random_state: 61321}
   holdout_fraction: 0.5           # the training set is split once to score each threshold (MSE)
   holdout_random_state: 1530
-  holdout_by_patient: false       # original code: region-level split (groups were passed but ignored)
-  balance_age: true               # original code: swap regions until mean age differs by < 1 year
+  holdout_by_patient: false       # false = split by region
+  balance_age: true               # swap regions until the mean age of the two parts differs by < 1 year
   published_features:
     - gray_log-sigma-1-5-mm-3D_glcm_Idmn
     - gray_log-sigma-4-0-mm-3D_glcm_Imc1
@@ -73,7 +73,7 @@ selection:
     - b_wavelet-H_ngtdm_Contrast
     - b_log-sigma-5-0-mm-3D_glszm_LargeAreaLowGrayLevelEmphasis
 
-# Step "train": five classifiers, patient-grouped stratified 5-fold CV + Optuna on the training cohort only.
+# Step "train": five classifiers, Optuna with patient-grouped stratified 5-fold CV on the training cohort.
 train:
   models: [lr, svm, rf, xgb, lgbm]
   tune: true                      # false = use published_params below (Supplementary Section S2)
@@ -84,7 +84,7 @@ train:
   early_stopping_rounds: {xgb: 30, lgbm: 20}   # used inside CV only (validation fold)
   n_jobs: 4
 
-# Search ranges from the original code. [low, high] = uniform, [low, high, log] = log scale,
+# Search ranges. [low, high] = uniform, [low, high, log] = log scale,
 # {choices: [...]} = categorical. Integer bounds give integer parameters.
 search_space:
   lr:

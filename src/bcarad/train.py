@@ -1,10 +1,8 @@
 """Hyperparameter tuning and final fit on the training cohort (paper Section 2.4).
 
-Each model is tuned with Optuna (TPE sampler) to maximise the mean validation AUROC of a
-patient-grouped, stratified 5-fold cross-validation inside the training cohort. The final model is
-refit on the whole training cohort with the best parameters. The internal and external validation
-cohorts are not used here. The decision threshold for sensitivity/specificity is the Youden point of
-the out-of-fold training predictions.
+Each model is tuned with Optuna (TPE sampler) on the mean validation AUROC of a patient-grouped,
+stratified 5-fold cross-validation, then fitted on the whole training cohort with the best parameters.
+The threshold for sensitivity and specificity is the Youden point of the out-of-fold predictions.
 """
 import json
 
@@ -33,7 +31,7 @@ def cross_validate(name, params, X, y, groups, cfg):
             fit_kw = {"eval_set": [(X[va], y[va])]}
         model.fit(X[tr], y[tr], **fit_kw)
         oof[va] = model.predict_proba(X[va])[:, 1]
-        if len(np.unique(y[va])) == 2:  # a tiny cohort can leave one grade out of a fold
+        if len(np.unique(y[va])) == 2:  # AUROC needs both grades in the fold
             aucs.append(roc_auc_score(y[va], oof[va]))
     return float(np.mean(aucs)), oof
 
@@ -50,12 +48,13 @@ def tune(name, X, y, groups, cfg):
 
 def youden_threshold(y, p):
     fpr, tpr, thr = roc_curve(y, p)
-    return float(thr[np.argmax(tpr - fpr)])
+    j = tpr - fpr
+    return float(thr[1:][np.argmax(j[1:])])  # thr[0] is inf (no region predicted positive)
 
 
 def train_models(train, features, cfg, models):
     """train: training-cohort regions with feature columns, y and patient_id. Saves one file per model."""
-    scaler = StandardScaler().fit(train[features])  # fitted on training regions only
+    scaler = StandardScaler().fit(train[features])
     X = scaler.transform(train[features])
     y, groups = train["y"].to_numpy(), train["patient_id"].to_numpy()
     summary = {}
@@ -81,5 +80,5 @@ def train_models(train, features, cfg, models):
 
 
 def load_model(cfg, name):
-    """Rebuild works too: make_model(name, ckpt["model_config"])."""
+    """Saved model with its scaler, feature list and threshold."""
     return joblib.load(out_path(cfg, "models", f"{name}.joblib"))

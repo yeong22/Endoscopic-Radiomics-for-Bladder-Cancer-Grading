@@ -2,13 +2,13 @@
 
     python main.py --step all --config configs/default.yaml
 
-Steps (each reads the previous step's output from outputs/<run_name>/):
-    split     patient-level train / internal / external cohorts       -> regions_split.csv
-    extract   preprocessing + PyRadiomics features                    -> features.csv
-    select    Coe-Thr-Lasso (or the 19 published features)            -> selected_features.txt
-    train     Optuna + patient-grouped CV, refit on training cohort   -> models/*.joblib
-    evaluate  AUROC/AUPRC (cluster bootstrap), DeLong, calibration, DCA -> results/
-    explain   SHAP for the SVM and GWL10 maps                         -> explain/
+Steps (results are written to outputs/<run_name>/):
+    split     training, internal and external cohorts (patient level)
+    extract   preprocessing and PyRadiomics features
+    select    Coe-Thr-Lasso, or the 19 features of the paper
+    train     Optuna tuning with 5-fold CV, then fit on the training cohort
+    evaluate  AUROC, AUPRC, DeLong test, calibration, decision curve
+    explain   SHAP and GWL10 maps
 """
 import argparse
 import sys
@@ -81,6 +81,8 @@ def step_train(cfg, args):
 def step_evaluate(cfg, args):
     df = load_table(cfg)
     names = [m for m in (args.models or cfg["train"]["models"]) if out_path(cfg, "models", f"{m}.joblib").exists()]
+    if not names:
+        raise SystemExit("[evaluate] no trained model found, run --step train first")
     ckpts = {m: train.load_model(cfg, m) for m in names}
     preds = df[["region_id", "patient_id", "cohort", "y"]].copy()
     for m, ckpt in ckpts.items():
@@ -110,8 +112,11 @@ def step_explain(cfg, args):
     x = cfg["explain"]
     df = load_table(cfg)
     d = df[df["cohort"] == x["cohort"]].reset_index(drop=True)
+    if not out_path(cfg, "models", f"{x['model']}.joblib").exists():
+        raise SystemExit(f"[explain] {x['model']} is not trained, run --step train first")
     ckpt = train.load_model(cfg, x["model"])
-    out_dir = out_path(cfg, "explain", "x").parent
+    out_dir = cfg["out"] / "explain"
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     values, X = explain.shap_values(ckpt, d, cfg)
     values.assign(region_id=d.loc[values.index, "region_id"]).to_csv(out_dir / "shap_values.csv", index=False)

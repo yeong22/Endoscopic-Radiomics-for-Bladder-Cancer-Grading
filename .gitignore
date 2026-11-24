@@ -1,4 +1,4 @@
-# data and results never go into git
+# data and results
 data/*
 !data/README.md
 outputs/
